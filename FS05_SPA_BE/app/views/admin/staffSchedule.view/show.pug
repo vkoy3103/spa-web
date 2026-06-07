@@ -1,0 +1,54 @@
+extends ../../layouts/admin/layout
+
+block content
+  .container-fluid
+    nav(aria-label="breadcrumb").breadcrumb-sticky
+      ol.breadcrumb.mb-0
+        li.breadcrumb-item
+          a(href="/admin/staff-schedules") Staff Schedule Management
+        li.breadcrumb-item.active(aria-current="page")= schedule.id
+
+    .row
+      .col-lg-8
+        .card.mb-4.content-card
+          .card-header.d-flex.justify-content-between.align-items-center
+            h6.mb-0.text-uppercase.text-primary.fw-bold Schedule Details
+            .d-flex.gap-2
+              a.btn.btn-sm.btn-warning(href='/admin/staff-schedules/' + schedule.id + '/edit')
+                i.fa.fa-edit.me-1
+                | Edit
+          .card-body
+            .row
+              .col-md-4.mb-3
+                label.text-muted.small Staff
+                p.mb-0.fw-semibold= schedule.staff ? (schedule.staff.firstName + ' ' + (schedule.staff.lastName || '')) : '-'
+              .col-md-4.mb-3
+                label.text-muted.small Date
+                p.mb-0= schedule.workDate ? new Date(schedule.workDate).toLocaleDateString('en-GB') : '-'
+              .col-md-4.mb-3
+                label.text-muted.small Time
+                p.mb-0= schedule.startTime && schedule.endTime ? (schedule.startTime + ' - ' + schedule.endTime) : '-'
+
+              .col-md-4.mb-3
+                label.text-muted.small Shift
+                p.mb-0= schedule.shiftType || '-'
+              .col-md-4.mb-3
+                label.text-muted.small Service
+                p.mb-0= schedule.Service ? schedule.Service.name : '-'
+              .col-md-4.mb-3
+                label.text-muted.small Appointments
+                p.mb-0= schedule.Appointment ? schedule.Appointment.length : 0
+
+              .col-12.mb-3
+                label.text-muted.small Status
+                p.mb-0
+                  span.badge(class=(schedule.status==='ACTIVE' ? 'bg-success' : schedule.status==='OFF' ? 'bg-secondary' : 'bg-warning'))= schedule.status
+
+              .col-12.mb-3
+                label.text-muted.small Note
+                p.mb-0.text-break= schedule.note || '-'
+
+    .d-flex.gap-2.mb-4
+      a.btn.btn-outline-secondary(href="/admin/staff-schedules")
+        i.fa.fa-arrow-left.me-1
+        | Back to List

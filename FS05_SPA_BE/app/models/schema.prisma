@@ -1,0 +1,619 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma"
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id() @default(uuid()) @map("id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at")
+  deleted   Boolean   @default(false) @map("deleted")
+
+  firstName   String  @map("first_name")
+  lastName    String  @map("last_name")
+  middleName  String? @map("middle_name")
+  email       String  @unique @map("email")
+  status      String  @default("PENDING") @map("status") // ACTIVE, INACTIVE, PENDING
+  avatarUrl   String? @map("avatar_url")
+  gender      String? @map("gender")
+  phoneNumber String? @map("phone_number")
+  address     String? @map("address")
+  userRole    String  @default("CUSTOMER") @map("user_role") // ADMIN, STAFF, CUSTOMER, MANAGER
+
+  googleId String? @unique @map("google_id")
+
+  // Relations
+  roles                UserToRole[]
+  permissions          UserToPermission[]
+  passwords            Password[]
+  roleCreated          Role[]             @relation("createdBy")
+  roleUpdated          Role[]             @relation("updatedBy")
+  featureCreated       Feature[]          @relation("createdBy")
+  featureUpdated       Feature[]          @relation("updatedBy")
+  permissionCreated    Permission[]       @relation("createdBy")
+  permissionUpdated    Permission[]       @relation("updatedBy")
+  requestCreator       Request[]          @relation("createdBy")
+  requestApprover      Request[]          @relation("approvedBy")
+  carts                Cart[]
+  orders               Order[]
+  StaffSchedule        StaffSchedule[]
+  assignedAppointments Appointment[]      @relation("AppointmentStaff")
+  createdAppointments  Appointment[]      @relation("AppointmentCreatedBy")
+
+  @@map("users")
+}
+
+model Password {
+  id        String    @id() @default(uuid())
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at")
+  deleted   Boolean   @default(false) @map("deleted")
+
+  password String
+  userId   String @map("user_id")
+  type     String @default("PASSWORD") @map("type") // PASSWORD, OTP, REFRESH_TOKEN
+
+  // Relation
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("passwords")
+}
+
+model Role {
+  id          String    @id() @default(uuid()) @map("id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deleted     Boolean   @default(false) @map("deleted")
+
+  code        String  @unique @map("code")
+  name        String  @map("name")
+  description String? @map("description")
+  isReadOnly  Boolean @default(false) @map("is_read_only")
+
+  // Relations
+  users       UserToRole[]
+  permissions RoleToPermission[]
+  createdBy   User?              @relation("createdBy", fields: [createdById], references: [id])
+  updatedBy   User?              @relation("updatedBy", fields: [updatedById], references: [id])
+
+  @@map("roles")
+}
+
+model UserToRole {
+  userId    String    @map("user_id")
+  roleId    String    @map("role_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_to_role")
+}
+
+model Feature {
+  id          String    @id() @default(uuid()) @map("id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deleted     Boolean   @default(false) @map("deleted")
+
+  code        String  @map("code")
+  name        String  @map("name")
+  description String? @map("description")
+  type        String  @default("FEATURE") @map("type") // MENU_GROUP (cha, không có permission), SYSTEM, CORE, FEATURE
+  parentId    String? @map("parent_id")
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  // Relations
+  parent      Feature?     @relation("featureRelation", fields: [parentId], references: [id])
+  childs      Feature[]    @relation("featureRelation")
+  permissions Permission[]
+  createdBy   User?        @relation("createdBy", fields: [createdById], references: [id])
+  updatedBy   User?        @relation("updatedBy", fields: [updatedById], references: [id])
+
+  @@map("features")
+}
+
+model Permission {
+  id          String    @id() @default(uuid()) @map("id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at")
+  createdById String?   @map("created_by_id")
+  updatedById String?   @map("updated_by_id")
+  deleted     Boolean   @default(false) @map("deleted")
+
+  code        String  @map("code")
+  name        String  @map("name")
+  description String? @map("description")
+  type        String  @default("FEATURE") @map("type") // SYSTEM, CORE, FEATURE
+  featureId   String  @map("feature_id")
+
+  // Relations
+  feature   Feature            @relation(fields: [featureId], references: [id])
+  users     UserToPermission[]
+  roles     RoleToPermission[]
+  createdBy User?              @relation("createdBy", fields: [createdById], references: [id])
+  updatedBy User?              @relation("updatedBy", fields: [updatedById], references: [id])
+
+  @@map("permissions")
+}
+
+model UserToPermission {
+  userId       String    @map("user_id")
+  permissionId String    @map("permission_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([userId, permissionId])
+  @@map("user_to_permission")
+}
+
+model RoleToPermission {
+  roleId       String    @map("role_id")
+  permissionId String    @map("permission_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_to_permission")
+}
+
+model Request {
+  id          String    @id() @default(uuid())
+  createdById String    @map("created_by_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  requestType    String    @map("request_type") // CREATE_TASK
+  jsonParameters String    @map("json_parameters")
+  status         String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy     String?   @map("approved_by")
+  approvedAt     DateTime? @map("approved_at")
+
+  // Relation
+  requester User  @relation("createdBy", fields: [createdById], references: [id])
+  approver  User? @relation("approvedBy", fields: [approvedBy], references: [id])
+
+  @@map("requests")
+}
+
+model Customer {
+  id        String    @id() @default(uuid()) @map("id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at")
+  deleted   Boolean   @default(false) @map("deleted")
+
+  firstName   String    @map("first_name")
+  lastName    String    @map("last_name")
+  middleName  String?   @map("middle_name")
+  email       String?   @unique @map("email")
+  status      String    @default("ACTIVE") @map("status") // ACTIVE, INACTIVE
+  avatarUrl   String?   @map("avatar_url")
+  gender      String?   @map("gender")
+  phoneNumber String?   @map("phone_number")
+  address     String?   @map("address")
+  birthday    DateTime? @map("birthday")
+
+  @@map("customers")
+}
+
+//
+// model Appointment {
+//   id Int @id @default(autoincrement())
+
+//   appointmentCode String @unique
+
+//   customerName  String
+//   customerPhone String
+
+//   staffName   String?
+//   serviceName String?
+
+//   roomName String?
+
+//   appointmentDate String
+//   startTime       String
+//   endTime         String
+
+//   status String
+//   // PENDING
+//   // CONFIRMED
+//   // CANCELED
+//   // COMPLETED
+
+//   note               String?
+//   cancellationReason String?
+
+//   createdBy String?
+//   // CUSTOMER
+//   // RECEPTIONIST
+
+//   createdAt String?
+//   updatedAt String?
+
+//   @@map("appointments")
+// }
+
+// ===== E-COMMERCE MODELS =====
+
+model Category {
+  id        String   @id() @default(uuid()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  name String @map("name")
+  slug String @unique @map("slug")
+
+  // Relations
+  products Product[]
+  Service  Service[]
+
+  @@map("categories")
+}
+
+model Product {
+  id        String   @id() @default(uuid()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  name        String  @map("name")
+  slug        String  @unique @map("slug")
+  description String? @map("description")
+  content     String? @map("content")
+  price       Float   @map("price")
+  stock       Int     @default(0) @map("stock")
+  sku         String  @unique @map("sku")
+  categoryId  String  @map("category_id")
+  status      String  @default("ACTIVE") @map("status") // ACTIVE, INACTIVE, ARCHIVED
+  imgUrl      String? @map("img_url")
+
+  // Relations
+  category   Category    @relation(fields: [categoryId], references: [id])
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Cart {
+  id        String   @id() @default(uuid()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  userId String @map("user_id")
+
+  // Relations
+  user  User       @relation(fields: [userId], references: [id])
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id() @default(uuid()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  cartId    String @map("cart_id")
+  productId String @map("product_id")
+  quantity  Int    @map("quantity")
+
+  // Relations
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("cart_items")
+}
+
+model Order {
+  id        String   @id() @default(uuid()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  userId         String  @map("user_id")
+  totalAmount    Float   @map("total_amount")
+  status         String  @default("PENDING") @map("status") // PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  depositAmount  Float?  @map("deposit_amount")
+  couponId       String? @map("coupon_id")
+  discountAmount Float?  @map("discount_amount")
+
+  deliveryAddress String? @map("delivery_address")
+  deliveryPhone   String? @map("delivery_phone")
+  deliveryNote    String? @map("delivery_note")
+
+  // Relations
+  user     User        @relation(fields: [userId], references: [id])
+  coupon   Coupon?     @relation(fields: [couponId], references: [id])
+  items    OrderItem[]
+  payments Payment[]
+  qrCodes  QRCode[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id() @default(uuid()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  orderId   String @map("order_id")
+  productId String @map("product_id")
+  quantity  Int    @map("quantity")
+  price     Float  @map("price")
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id        String   @id() @default(uuid()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  orderId String  @map("order_id")
+  amount  Float   @map("amount")
+  method  String  @map("method") // CREDIT_CARD, BANK_TRANSFER, MOMO, ZALOPAY, COD
+  type    String  @map("type") // FULL, DEPOSIT
+  status  String  @default("PENDING") @map("status") // PENDING, PAID, FAILED, CANCELLED
+  txnRef  String? @map("txn_ref")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model QRCode {
+  id        String   @id() @default(uuid()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  orderId   String    @map("order_id")
+  code      String    @map("code")
+  expiredAt DateTime? @map("expired_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("qr_codes")
+}
+
+model News {
+  id        String  @id @default(uuid())
+  title     String
+  slug      String  @unique
+  thumbnail String
+  summary   String?
+  content   String
+
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id String @id @default(uuid())
+
+  content String
+
+  userName  String
+  userEmail String?
+
+  newsId String
+  news   News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model StaffSchedule {
+  id        String    @id() @default(uuid()) @map("id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @default(now()) @updatedAt @map("updated_at")
+  deleted   Boolean   @default(false) @map("deleted")
+
+  staffId  String   @map("staff_id")
+  workDate DateTime @map("work_date")
+
+  startTime String @map("start_time")
+  endTime   String @map("end_time")
+
+  shiftType String? @map("shift_type")
+  // MORNING
+  // AFTERNOON
+  // EVENING
+  // FULL_TIME
+
+  status String @default("ACTIVE") @map("status")
+  // ACTIVE
+  // OFF
+  // LEAVE
+
+  note String? @map("note")
+
+  // Relations
+  staff       User          @relation(fields: [staffId], references: [id])
+  Service     Service?      @relation(fields: [serviceId], references: [id])
+  serviceId   String?       @map("service_id")
+  Appointment Appointment[]
+
+  @@map("staff_schedules")
+}
+
+model Service {
+  id              String  @id @default(uuid()) @map("id")
+  name            String  @db.VarChar(255)
+  description     String? @db.Text
+  price           Decimal @db.Decimal(10, 2)
+  durationMinutes Int     @map("duration_minutes")
+  categoryId      String? @map("category_id")
+  imageUrl        String? @map("image_url") @db.VarChar(500)
+  isActive        Boolean @default(true) @map("is_active")
+  isFeatured      Boolean @default(false) @map("is_featured")
+
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  staffSchedules StaffSchedule[]
+  Appointment    Appointment[]
+
+  @@map("services")
+}
+
+// model Appointment {
+//   id        String    @id @default(uuid()) @map("id")
+//   createdAt DateTime  @default(now()) @map("created_at")
+//   updatedAt DateTime? @updatedAt @map("updated_at")
+//   deleted   Boolean   @default(false) @map("deleted")
+
+//   appointmentCode String @unique @map("appointment_code")
+//   room            String @map("room")
+
+//   // Customer Info
+//   customerName  String @map("customer_name")
+//   customerPhone String @map("customer_phone")
+
+//   // Appointment Time
+//   appointmentDate DateTime @map("appointment_date")
+//   startTime       String   @map("start_time")
+//   endTime         String   @map("end_time")
+
+//   // Foreign Keys
+//   staffId         String? @map("staff_id")
+//   staffScheduleId String? @map("staff_schedule_id")
+//   serviceId       String? @map("service_id")
+
+//   // Status
+//   status String @default("PENDING") @map("status")
+//   // PENDING
+//   // CONFIRMED
+//   // COMPLETED
+//   // CANCELED
+//   // NO_SHOW
+
+//   // Notes
+//   note               String? @map("note")
+//   cancellationReason String? @map("cancellation_reason")
+
+//   // Audit
+//   createdById String? @map("created_by_id")
+
+//   // Relations
+//   staff         User?          @relation("AppointmentStaff", fields: [staffId], references: [id])
+//   staffSchedule StaffSchedule? @relation(fields: [staffScheduleId], references: [id])
+//   service       Service?       @relation(fields: [serviceId], references: [id])
+//   createdBy     User?          @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
+
+//   @@index([staffId])
+//   @@index([staffScheduleId])
+//   @@index([appointmentDate])
+//   @@index([status])
+//   @@map("appointments")
+// }
+
+model Appointment {
+  id        String    @id @default(uuid()) @map("id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  deleted   Boolean   @default(false) @map("deleted")
+
+  appointmentCode String @unique @map("appointment_code")
+  room            String @map("room")
+
+  // Customer Info
+  customerName  String @map("customer_name")
+  customerPhone String @map("customer_phone")
+
+  // Appointment Time
+  appointmentDate DateTime @map("appointment_date")
+  startTime       String   @map("start_time")
+  endTime         String   @map("end_time")
+
+  // Foreign Keys
+  staffId         String  @map("staff_id")
+  staffScheduleId String  @map("staff_schedule_id")
+  serviceId       String? @map("service_id")
+
+  // Status
+  status String @default("PENDING") @map("status")
+  // PENDING
+  // CONFIRMED
+  // COMPLETED
+  // CANCELED
+  // NO_SHOW
+
+  // Notes
+  note               String? @map("note")
+  cancellationReason String? @map("cancellation_reason")
+
+  // Audit
+  createdById String? @map("created_by_id")
+
+  // Relations
+  staff User @relation("AppointmentStaff", fields: [staffId], references: [id])
+
+  staffSchedule StaffSchedule @relation(fields: [staffScheduleId], references: [id])
+
+  service Service? @relation(fields: [serviceId], references: [id])
+
+  createdBy User? @relation("AppointmentCreatedBy", fields: [createdById], references: [id])
+
+  @@index([staffId])
+  @@index([staffScheduleId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Coupon {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  description String?
+
+  discountType  String @map("discount_type")
+  discountValue Float  @map("discount_value")
+
+  minOrder    Float? @map("min_order")
+  maxDiscount Float? @map("max_discount")
+
+  quantity  Int
+  usedCount Int @default(0) @map("used_count")
+
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  orders Order[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("coupons")
+}

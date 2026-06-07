@@ -1,0 +1,7 @@
+extends ../../layouts/admin/layout
+
+block content
+  #adminProfileApp
+
+  script#adminProfileData(type="application/json")
+    != JSON.stringify({ currentUser, roles })

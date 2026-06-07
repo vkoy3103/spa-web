@@ -1,0 +1,49 @@
+import { verifyToken } from "@lib";
+import { NextFunction, Request, Response } from "express";
+import { ApplicationMiddleware } from "./application.middleware";
+
+const ADMIN_FEATURE_CODES = ["AM", "UM", "APPOINTMENT"];
+
+export class CurrentUserMiddleware extends ApplicationMiddleware {
+  public async execute(req: Request, res: Response, next: NextFunction) {
+    try {
+      let userId: string | undefined;
+
+      const isApiRequest = req.originalUrl.includes("/api");
+      if (isApiRequest) {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+          req.user = null;
+          return next();
+        }
+
+        const token = authHeader.split(" ")[1];
+        try {
+          const decoded = verifyToken(token);
+          userId = decoded?.id;
+        } catch (jwtError) {
+          // Token invalid hoặc expired
+          userId = undefined;
+        }
+      } else {
+        userId = req.session?.userId;
+      }
+
+      req.user = userId ? await super.getUserById(userId, true) : null;
+
+      // Cho request web: set hasAdminAccess để layout hiển thị nút Admin (có bất kỳ permission AM hoặc UM)
+      if (!isApiRequest) {
+        const perms = req.user?.permissions ?? [];
+        const locals = res.locals as Record<string, unknown>;
+        locals.hasAdminAccess = perms.some((p: string) =>
+          ADMIN_FEATURE_CODES.some((code) => p.startsWith(`${code}::`)),
+        );
+      }
+
+      next();
+    } catch (error) {
+      req.user = null;
+      next();
+    }
+  }
+}
