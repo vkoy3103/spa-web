@@ -1,51 +1,82 @@
-# Irwin Framework 🚀
+# FS05 Spa Management System - Backend 🚀
+
+---
+---
+
+Dự án Backend cho Hệ thống Quản lý Spa, được xây dựng trên nền tảng **Irwin Framework** - một framework Node.js mạnh mẽ tập trung vào năng suất (Convention over Configuration), lấy cảm hứng từ Ruby on Rails.
+
+## 🛠 Công nghệ sử dụng
+
+- **Runtime**: Node.js với TypeScript.
+- **Framework**: Irwin Framework (Express-based).
+- **Database ORM**: Prisma.
+- **Validation**: Class-validator.
+- **Background Jobs**: BullMQ / AWS Lambda.
+- **Infrastructure**: Hỗ trợ Serverless (AWS Lambda).
 
 ---
 
----
+## 🌟 Tính năng chính (Features)
 
-> **The Industrial-grade Node.js Framework for Rails Lovers.**
-
-Irwin Framework is a powerful, convention-over-configuration Node.js framework inspired by **Ruby on Rails**. It combines the type-safety of **TypeScript**, the performance of **Prisma**, the elegance of **Pug**, and the reactivity of **Vue 3**.
-
----
-
-### 🌐 Languages / 言語 / Ngôn ngữ
-
-- English
-- 日本語 (Japanese)
-- Tiếng Việt (Vietnamese)
+Hệ thống bao gồm các module quản trị quan trọng:
+- **Quản lý người dùng (User Management)**: Phân quyền (RBAC), quản lý tài khoản.
+- **Quản lý lịch hẹn (Appointment)**: Đặt lịch và theo dõi trạng thái.
+- **Quản lý dịch vụ (Service)**: Danh mục gói dịch vụ Spa.
+- **Quản lý bài viết (News & Comments)**: Hệ thống tin tức, xu hướng làm đẹp và tương tác người dùng.
+- **Quản lý nhân viên (Staff Schedule)**: Sắp xếp lịch làm việc cho nhân viên.
+- **Hệ thống Chat**: Giao tiếp thời gian thực.
 
 ---
 
-<a name="english"></a>
+## 🚀 Bắt đầu nhanh (Quick Start)
 
-## 🇺🇸 English
+### 1. Thiết lập môi trường
+Cài đặt các thư viện cần thiết và cấu hình biến môi trường:
+```bash
+yarn install
+cp .env.example .env
+```
 
-### 🌟 Design Philosophy
+### 2. Cơ sở dữ liệu & Seed dữ liệu
+Khởi tạo database và nạp dữ liệu mẫu (bao gồm quyền, tính năng và bài viết mẫu):
+```bash
+yarn db:migrate
+yarn db:seed
+```
 
-- **Convention over Configuration (CoC)**: Standardized directory structure to eliminate boilerplate.
-- **Single Source of Truth (SSoT)**: Define Routes, Permissions, and Swagger documentation in a single unified declaration.
-- **Modern Frontend Integration**: Seamlessly mix Server-Side Rendering (Pug) with Modern Reactive Components (Vue 3).
+### 3. Chạy môi trường phát triển
+```bash
+yarn dev
+```
 
-### 🏗 Scaffolding Generators
+- **App URL**: `http://localhost:8000`
+- **Swagger API Documentation**: `http://localhost:8000/api-docs`
 
-Stop writing manual code. Use the CLI to generate everything:
-| Command | Action |
+---
+
+## 🏗 Công cụ Scaffolding (Generators)
+
+Sử dụng CLI để tạo nhanh các thành phần code nhằm đảm bảo tính đồng nhất:
+
+| Lệnh | Chức năng |
 | :--- | :--- |
-| `yarn g:scaffold [Name]` | Full CRUD (Model, Controller, Service, Route, View) |
-| `yarn g:controller [Name]` | Generates a new Controller |
-| `yarn g:service [Name]` | Generates a Service Object for business logic |
-| `yarn g:job [Name]` | Generates a Background Job (BullMQ/Lambda) |
-| `yarn g:resource [Name]` | Generates Resourceful Route (API + UI) |
+| `yarn g:scaffold [Name]` | Tạo trọn bộ: Model, Controller, Service, Route, View |
+| `yarn g:controller [Name]` | Tạo một Controller mới |
+| `yarn g:service [Name]` | Tạo Service Object cho business logic |
+| `yarn g:job [Name]` | Tạo Background Job (BullMQ/Lambda) |
+| `yarn g:resource [Name]` | Tạo Resourceful Route (API + UI) |
 
-### 🛣 Resourceful Routing & Auto Swagger
+---
+
+## 📖 Cấu trúc code tiêu biểu
+
+### 🛣 Resourceful Routing
+Khai báo Route, Phân quyền và Swagger tại cùng một nơi:
 
 ```typescript
-// app/routes/user.route.ts
-this.resource("/users", UsersController, {
-  setPermissionFor: "UM",
-  document: { body: CreateUserValidator }, // Auto-generates Swagger Schema from Validator
+this.resource("/news", NewsController, {
+  setPermissionFor: "NEWS",
+  document: { body: CreateNewsValidator }, 
 });
 ```
 
